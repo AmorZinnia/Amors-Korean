@@ -1,0 +1,993 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Korean Sentence Diary</title>
+  <meta name="theme-color" content="#111111" />
+  <link rel="manifest" href="manifest.json" />
+  <style>
+    :root{
+      --bg:#0b0b0c; --card:#141416; --muted:#a9a9b2; --text:#f2f2f4;
+      --line:#26262b; --btn:#1f1f25; --btn2:#2a2a33; --good:#2ee59d;
+      --warn:#ffd166; --bad:#ff5c7a; --ok:#7aa7ff;
+      --radius:18px;
+      --shadow: 0 14px 40px rgba(0,0,0,.45);
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC",
+              "Hiragino Sans GB", "Noto Sans CJK SC", "Noto Sans", "Helvetica Neue", Arial, "Apple Color Emoji",
+              "Segoe UI Emoji";
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0; font-family:var(--sans); background: radial-gradient(1200px 600px at 50% -10%, #1b1b22, var(--bg));
+      color:var(--text);
+    }
+    a{ color:inherit; }
+    .wrap{
+      max-width: 980px; margin: 0 auto; padding: 22px 16px 34px;
+      display:flex; flex-direction:column; gap:14px;
+    }
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding: 14px 16px; background: rgba(20,20,22,.75); border:1px solid var(--line);
+      border-radius: var(--radius); box-shadow: var(--shadow); backdrop-filter: blur(10px);
+      position: sticky; top: 10px; z-index: 10;
+    }
+    .brand{
+      display:flex; flex-direction:column; gap:3px; min-width: 210px;
+    }
+    .brand h1{
+      margin:0; font-size: 16px; letter-spacing:.2px; font-weight: 680;
+    }
+    .brand .sub{
+      margin:0; color:var(--muted); font-size: 12px;
+    }
+    .tabs{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+    .tab{
+      border:1px solid var(--line); background: var(--btn);
+      color: var(--text); padding: 9px 12px; border-radius: 999px;
+      font-size: 13px; cursor:pointer; user-select:none;
+    }
+    .tab.active{ background: var(--btn2); border-color:#3a3a44; }
+    .grid{
+      display:grid; grid-template-columns: 1.1fr .9fr; gap:14px;
+    }
+    @media (max-width: 860px){
+      .grid{ grid-template-columns: 1fr; }
+      .brand{ min-width: unset; }
+    }
+    .card{
+      background: rgba(20,20,22,.75);
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      overflow:hidden;
+    }
+    .card .hd{
+      padding: 14px 16px; border-bottom: 1px solid var(--line);
+      display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+    }
+    .card .hd .t{
+      display:flex; flex-direction:column; gap:2px;
+    }
+    .card .hd .t .title{ font-weight: 680; font-size:14px; margin:0; }
+    .card .hd .t .hint{ color:var(--muted); font-size:12px; margin:0; line-height:1.35; }
+    .card .bd{ padding: 14px 16px; }
+    .row{ display:flex; gap:10px; flex-wrap:wrap; }
+    .row > *{ flex: 1 1 160px; }
+    label{ display:block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    input[type="text"], textarea, select{
+      width:100%; padding: 10px 11px; border-radius: 12px;
+      border:1px solid #2a2a33; background:#0f0f12; color:var(--text);
+      outline:none; font-size: 14px;
+    }
+    textarea{ min-height: 88px; resize: vertical; }
+    .btn{
+      border:1px solid var(--line); background: var(--btn2); color:var(--text);
+      padding: 10px 12px; border-radius: 12px; cursor:pointer;
+      font-size: 13px; display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    }
+    .btn:active{ transform: translateY(1px); }
+    .btn.ghost{ background: transparent; }
+    .btn.bad{ border-color: rgba(255,92,122,.35); }
+    .btn.ok{ border-color: rgba(122,167,255,.35); }
+    .btn.good{ border-color: rgba(46,229,157,.35); }
+    .pill{
+      padding:6px 10px; border-radius: 999px; border:1px solid var(--line);
+      color: var(--muted); font-size: 12px; display:inline-flex; gap:8px; align-items:center;
+      background: rgba(0,0,0,.15);
+    }
+    .kmono{ font-family: var(--mono); font-size: 12px; color: #c9c9d2; }
+    .listwrap{
+      margin-top: 14px;
+      border-top: 1px solid var(--line);
+      padding-top: 14px;
+    }
+    .hscroll{
+      display:flex; gap:12px; overflow-x:auto; padding-bottom: 10px;
+      scroll-snap-type: x mandatory;
+    }
+    .hscroll::-webkit-scrollbar{ height: 10px; }
+    .hscroll::-webkit-scrollbar-thumb{ background:#2a2a33; border-radius:999px; }
+    .item{
+      min-width: 320px; max-width: 360px;
+      border:1px solid #2a2a33; background: rgba(15,15,18,.9);
+      border-radius: 16px; padding: 12px 12px;
+      scroll-snap-align: start;
+      display:flex; flex-direction:column; gap:8px;
+    }
+    .item .wline{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .word{
+      font-weight: 750; font-size: 18px; letter-spacing:.2px;
+    }
+    .cn{
+      color: var(--muted); font-size: 13px; line-height:1.35;
+    }
+    .ex{
+      border-top:1px dashed #2b2b35; padding-top: 10px;
+      display:flex; flex-direction:column; gap:6px;
+    }
+    .ex .ko{ font-size: 14px; line-height:1.5; }
+    .ex .zh{ font-size: 13px; color: var(--muted); line-height:1.5; }
+    .meta{
+      display:flex; gap:8px; flex-wrap:wrap; margin-top:2px;
+    }
+    .meta .tag{
+      font-size:12px; border:1px solid #2a2a33; padding: 5px 8px; border-radius: 999px;
+      color: #c9c9d2; background: rgba(0,0,0,.18);
+    }
+    .muted{ color:var(--muted); }
+    .split{
+      display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    }
+    .duebig{
+      font-size: 22px; font-weight: 780;
+    }
+    .reviewBtns{
+      display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;
+    }
+    .reviewBtns .btn{ flex: 1 1 120px; }
+    .note{
+      font-size: 12px; color: var(--muted); line-height:1.45;
+    }
+    .dangerzone{
+      display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+    }
+    .hr{ height:1px; background: var(--line); margin: 10px 0; }
+    .small{ font-size:12px; }
+    .hidden{ display:none !important; }
+    .kbd{
+      font-family: var(--mono);
+      font-size: 12px; border: 1px solid #2a2a33; padding: 2px 6px; border-radius: 7px;
+      background: rgba(0,0,0,.25); color:#c9c9d2;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <h1 id="appTitle">Korean Sentence Diary</h1>
+        <p class="sub">例句学单词 · 中韩对照 · 发音 · 艾宾浩斯复习</p>
+      </div>
+      <div class="tabs">
+        <div class="tab active" data-tab="today">今天复习</div>
+        <div class="tab" data-tab="add">添加词条</div>
+        <div class="tab" data-tab="import">导入</div>
+        <div class="tab" data-tab="settings">设置</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card" id="panel-today">
+        <div class="hd">
+          <div class="t">
+            <p class="title">今天该复习</p>
+            <p class="hint">按时间到期排序。每次点一次等级，就会自动安排下一次复习日期。</p>
+          </div>
+          <span class="pill"><span id="todayCount">0</span><span>项</span></span>
+        </div>
+        <div class="bd">
+          <div id="todayEmpty" class="note">今天没有到期项目。你可以去“添加词条”或“导入”。</div>
+
+          <div id="reviewBox" class="hidden">
+            <div class="split">
+              <div>
+                <div class="duebig" id="rvWord">—</div>
+                <div class="cn" id="rvCn">—</div>
+              </div>
+              <div class="row" style="justify-content:flex-end; flex:0 0 auto;">
+                <button class="btn ghost ok" id="btnSpeak">🔊 发音</button>
+                <button class="btn ghost" id="btnShowAnswer">显示/隐藏例句</button>
+              </div>
+            </div>
+
+            <div id="rvAnswer" class="ex hidden" style="margin-top:12px;">
+              <div class="ko" id="rvKoEx">—</div>
+              <div class="zh" id="rvZhEx">—</div>
+            </div>
+
+            <div class="meta">
+              <div class="tag" id="rvStage">Stage: day0</div>
+              <div class="tag" id="rvDue">Due: —</div>
+              <div class="tag" id="rvNextPreview">Next: —</div>
+            </div>
+
+            <div class="reviewBtns">
+              <button class="btn bad" data-grade="again">不会</button>
+              <button class="btn" data-grade="hard">模糊</button>
+              <button class="btn good" data-grade="good">会</button>
+              <button class="btn ok" data-grade="easy">简单</button>
+            </div>
+
+            <div class="hr"></div>
+            <div class="small muted" id="rvTip">规则：不会→回到 day0；模糊→往后推一小步；会→按既定曲线走；简单→跳过一两步。</div>
+          </div>
+
+          <div class="listwrap">
+            <div class="split">
+              <div class="note">你添加的词条（横向滑动查看）。</div>
+              <button class="btn ghost" id="btnExport">导出备份</button>
+            </div>
+            <div class="hscroll" id="allItems"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="panel-add">
+        <div class="hd">
+          <div class="t">
+            <p class="title">添加一个词条</p>
+            <p class="hint">每个词条都必须有中文释义。添加后自动进入 day0（今天）。</p>
+          </div>
+          <span class="pill"><span class="kmono">Required</span></span>
+        </div>
+        <div class="bd">
+          <div class="row">
+            <div>
+              <label>韩语单词（必填）</label>
+              <input id="inWord" type="text" placeholder="예: 설레다" />
+            </div>
+            <div>
+              <label>中文释义（必填）</label>
+              <input id="inCn" type="text" placeholder="例：心动、激动（因期待而）" />
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label>韩语例句（必填）</label>
+              <textarea id="inKoEx" placeholder="예: 내일 여행이라서 마음이 설레." ></textarea>
+            </div>
+            <div>
+              <label>中文例句翻译（必填）</label>
+              <textarea id="inZhEx" placeholder="例：因为明天要旅行，我心里很激动。" ></textarea>
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label>标签（可选，逗号分隔）</label>
+              <input id="inTags" type="text" placeholder="例：PIU,日常,情绪" />
+            </div>
+            <div>
+              <label>备注（可选）</label>
+              <input id="inNote" type="text" placeholder="例：常和 -고 싶다 一起出现" />
+            </div>
+          </div>
+
+          <div class="row">
+            <button class="btn good" id="btnAdd">添加</button>
+            <button class="btn ghost" id="btnAddSpeak">🔊 听单词</button>
+          </div>
+
+          <div class="note" style="margin-top:10px;">
+            发音来自 iPad 系统语音（TTS）。如果你发现韩语声音不可用：打开 iPad 设置 → 辅助功能/朗读内容/语音，下载一个韩语语音即可。
+          </div>
+        </div>
+      </div>
+
+      <div class="card hidden" id="panel-import">
+        <div class="hd">
+          <div class="t">
+            <p class="title">导入（CSV/TSV）</p>
+            <p class="hint">列顺序固定：韩语单词, 中文释义, 韩语例句, 中文例句翻译, 标签(可选), 备注(可选)</p>
+          </div>
+          <span class="pill"><span class="kmono">Paste / File</span></span>
+        </div>
+        <div class="bd">
+          <div class="row">
+            <div>
+              <label>选择文件（.csv 或 .txt）</label>
+              <input id="fileImport" type="file" accept=".csv,.txt" />
+            </div>
+            <div>
+              <label>分隔符</label>
+              <select id="sep">
+                <option value="auto">自动识别（推荐）</option>
+                <option value=",">CSV 逗号 ,</option>
+                <option value="\t">TSV 制表符 Tab</option>
+                <option value="|">竖线 |</option>
+              </select>
+            </div>
+          </div>
+
+          <label style="margin-top:10px;">或直接粘贴（每行一个词条）</label>
+          <textarea id="pasteBox" placeholder="예) 설레다,心动；激动,내일 여행이라서 마음이 설레.,因为明天要旅行，我心里很激动.,PIU,常用情绪词"></textarea>
+
+          <div class="row" style="margin-top:10px;">
+            <button class="btn good" id="btnImport">导入</button>
+            <button class="btn ghost" id="btnSample">填入示例</button>
+          </div>
+
+          <div class="note" style="margin-top:10px;">
+            导入会自动去重（同一个“韩语单词”视为同一条）。重复项会更新内容，并保留原复习进度。
+          </div>
+        </div>
+      </div>
+
+      <div class="card hidden" id="panel-settings">
+        <div class="hd">
+          <div class="t">
+            <p class="title">设置</p>
+            <p class="hint">默认曲线：day0/1/2/3/5/7/10/15/30。你也可以自定义。</p>
+          </div>
+          <span class="pill"><span class="kmono">Local-only</span></span>
+        </div>
+        <div class="bd">
+          <div class="row">
+            <div>
+              <label>网站标题</label>
+              <input id="inTitle" type="text" placeholder="例：Amor's Korean Diary" />
+            </div>
+            <div>
+              <label>复习曲线（天数，用逗号）</label>
+              <input id="inCurve" type="text" placeholder="0,1,2,3,5,7,10,15,30" />
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label>“简单”跳步（默认 2）</label>
+              <input id="inEasyJump" type="text" placeholder="2" />
+            </div>
+            <div>
+              <label>“模糊”退步（默认 1）</label>
+              <input id="inHardBack" type="text" placeholder="1" />
+            </div>
+          </div>
+
+          <div class="row">
+            <button class="btn good" id="btnSaveSettings">保存设置</button>
+            <button class="btn ghost" id="btnInstallTip">如何添加到主屏</button>
+          </div>
+
+          <div class="hr"></div>
+          <div class="dangerzone">
+            <button class="btn bad" id="btnReset">清空所有数据</button>
+            <div class="note">清空会删除你导入/添加的全部词条与复习记录（不可恢复）。建议先“导出备份”。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const STORAGE_KEY = "ksd.v1";
+  const SETTINGS_KEY = "ksd.settings.v1";
+
+  const $ = (id) => document.getElementById(id);
+  const tabs = Array.from(document.querySelectorAll(".tab"));
+
+  const defaultSettings = {
+    title: "Korean Sentence Diary",
+    curveDays: [0,1,2,3,5,7,10,15,30],
+    easyJump: 2,
+    hardBack: 1
+  };
+
+  function nowDate() {
+    const d = new Date();
+    d.setHours(0,0,0,0);
+    return d;
+  }
+  function fmtDate(d) {
+    const x = new Date(d);
+    return x.toISOString().slice(0,10);
+  }
+  function addDays(base, days) {
+    const d = new Date(base);
+    d.setDate(d.getDate() + days);
+    d.setHours(0,0,0,0);
+    return d;
+  }
+
+  function loadSettings(){
+    try{
+      const raw = localStorage.getItem(SETTINGS_KEY);
+      if(!raw) return {...defaultSettings};
+      const s = JSON.parse(raw);
+      const merged = {...defaultSettings, ...s};
+      merged.curveDays = Array.isArray(merged.curveDays) ? merged.curveDays : defaultSettings.curveDays;
+      merged.easyJump = parseInt(merged.easyJump ?? defaultSettings.easyJump, 10);
+      merged.hardBack = parseInt(merged.hardBack ?? defaultSettings.hardBack, 10);
+      return merged;
+    }catch(e){
+      return {...defaultSettings};
+    }
+  }
+  function saveSettings(s){
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+  }
+
+  function loadDB(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return { items: [] };
+      const db = JSON.parse(raw);
+      if(!db.items) db.items = [];
+      return db;
+    }catch(e){
+      return { items: [] };
+    }
+  }
+  function saveDB(db){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+  }
+
+  function uid(){
+    return Math.random().toString(36).slice(2,10) + "-" + Date.now().toString(36);
+  }
+
+  // item schema:
+  // { id, wordKo, meaningZh, exKo, exZh, tags[], note, createdAt, stageIndex, dueDateISO, lastReviewedISO }
+  function normalizeText(s){ return (s ?? "").toString().trim(); }
+  function must(s){ return normalizeText(s).length > 0; }
+
+  function getDueDateFromStage(settings, stageIndex, fromDate){
+    const idx = Math.max(0, Math.min(stageIndex, settings.curveDays.length - 1));
+    const days = settings.curveDays[idx];
+    return fmtDate(addDays(fromDate, days));
+  }
+
+  function speakKo(text){
+    const t = normalizeText(text);
+    if(!t) return;
+
+    // Stop any current speech
+    if(window.speechSynthesis) window.speechSynthesis.cancel();
+
+    const u = new SpeechSynthesisUtterance(t);
+    u.lang = "ko-KR";
+    u.rate = 0.95;
+    u.pitch = 1.0;
+
+    // Try choose Korean voice if available
+    const voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+    const ko = voices.find(v => (v.lang || "").toLowerCase().startsWith("ko"));
+    if(ko) u.voice = ko;
+
+    try{
+      window.speechSynthesis.speak(u);
+    }catch(e){
+      alert("当前浏览器不支持朗读。你可以用系统的朗读功能或换 Safari。");
+    }
+  }
+
+  function upsertItem(db, incoming){
+    const key = normalizeText(incoming.wordKo);
+    const existing = db.items.find(it => normalizeText(it.wordKo) === key);
+    if(existing){
+      existing.meaningZh = incoming.meaningZh;
+      existing.exKo = incoming.exKo;
+      existing.exZh = incoming.exZh;
+      existing.tags = incoming.tags;
+      existing.note = incoming.note;
+      return existing;
+    }
+    db.items.push(incoming);
+    return incoming;
+  }
+
+  // Review scheduling rules
+  // again: stageIndex = 0, due = today (day0)
+  // hard:  stageIndex = max(0, stageIndex - hardBack), due = today + curve[stageIndex]
+  // good:  stageIndex = min(stageIndex+1, max), due = today + curve[next]
+  // easy:  stageIndex = min(stageIndex + 1 + easyJump, max), due = today + curve[target]
+  function applyGrade(settings, item, grade){
+    const today = nowDate();
+    const maxIdx = settings.curveDays.length - 1;
+
+    let newStage = item.stageIndex ?? 0;
+
+    if(grade === "again"){
+      newStage = 0;
+    }else if(grade === "hard"){
+      newStage = Math.max(0, newStage - (settings.hardBack || 1));
+      // Also allow a small forward step if already at 0
+      // but keep it simple: stay (or go back)
+    }else if(grade === "good"){
+      newStage = Math.min(maxIdx, newStage + 1);
+    }else if(grade === "easy"){
+      const jump = 1 + (settings.easyJump || 2);
+      newStage = Math.min(maxIdx, newStage + jump);
+    }
+
+    item.stageIndex = newStage;
+    item.lastReviewedISO = fmtDate(today);
+    item.dueDateISO = getDueDateFromStage(settings, newStage, today);
+  }
+
+  function getDueItems(db){
+    const todayISO = fmtDate(nowDate());
+    return db.items
+      .filter(it => (it.dueDateISO ?? todayISO) <= todayISO)
+      .sort((a,b) => (a.dueDateISO || "").localeCompare(b.dueDateISO || "") || (a.createdAt || "").localeCompare(b.createdAt || ""));
+  }
+
+  function renderAllItems(db){
+    const box = $("allItems");
+    box.innerHTML = "";
+    const items = [...db.items].sort((a,b) => (a.dueDateISO || "").localeCompare(b.dueDateISO || "") || normalizeText(a.wordKo).localeCompare(normalizeText(b.wordKo)));
+    if(items.length === 0){
+      const d = document.createElement("div");
+      d.className = "item";
+      d.innerHTML = `<div class="note">还没有词条。去“添加词条”或“导入”。</div>`;
+      box.appendChild(d);
+      return;
+    }
+    for(const it of items){
+      const el = document.createElement("div");
+      el.className = "item";
+      const tags = (it.tags || []).filter(Boolean).slice(0,6);
+      el.innerHTML = `
+        <div class="wline">
+          <div class="word">${escapeHTML(it.wordKo || "")}</div>
+          <button class="btn ghost ok small" data-speak="${escapeAttr(it.wordKo || "")}">🔊</button>
+        </div>
+        <div class="cn">${escapeHTML(it.meaningZh || "")}</div>
+        <div class="meta">
+          <div class="tag">Due: ${escapeHTML(it.dueDateISO || "—")}</div>
+          <div class="tag">Stage: day${escapeHTML(String(settings.curveDays[it.stageIndex ?? 0] ?? 0))}</div>
+          ${tags.map(t => `<div class="tag">${escapeHTML(t)}</div>`).join("")}
+        </div>
+        <div class="ex">
+          <div class="ko">${escapeHTML(it.exKo || "")}</div>
+          <div class="zh">${escapeHTML(it.exZh || "")}</div>
+        </div>
+        <div class="row" style="margin-top:6px;">
+          <button class="btn ghost small" data-edit="${escapeAttr(it.id)}">编辑</button>
+          <button class="btn ghost bad small" data-del="${escapeAttr(it.id)}">删除</button>
+        </div>
+      `;
+      box.appendChild(el);
+    }
+
+    box.querySelectorAll("[data-speak]").forEach(btn => {
+      btn.addEventListener("click", () => speakKo(btn.getAttribute("data-speak")));
+    });
+    box.querySelectorAll("[data-del]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-del");
+        const it = db.items.find(x => x.id === id);
+        if(!it) return;
+        if(confirm(`确定删除：${it.wordKo} ？`)){
+          db.items = db.items.filter(x => x.id !== id);
+          saveDB(db);
+          refresh();
+        }
+      });
+    });
+    box.querySelectorAll("[data-edit]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-edit");
+        const it = db.items.find(x => x.id === id);
+        if(!it) return;
+        // load into add form
+        $("inWord").value = it.wordKo || "";
+        $("inCn").value = it.meaningZh || "";
+        $("inKoEx").value = it.exKo || "";
+        $("inZhEx").value = it.exZh || "";
+        $("inTags").value = (it.tags || []).join(", ");
+        $("inNote").value = it.note || "";
+        // mark edit by storing id in dataset
+        $("btnAdd").dataset.editingId = id;
+        $("btnAdd").textContent = "保存修改";
+        switchTab("add");
+      });
+    });
+  }
+
+  function renderToday(db){
+    const due = getDueItems(db);
+    $("todayCount").textContent = String(due.length);
+
+    if(due.length === 0){
+      $("todayEmpty").classList.remove("hidden");
+      $("reviewBox").classList.add("hidden");
+      return;
+    }
+    $("todayEmpty").classList.add("hidden");
+    $("reviewBox").classList.remove("hidden");
+
+    // Use the first due item as current
+    currentDueList = due;
+    currentIndex = Math.max(0, Math.min(currentIndex, due.length - 1));
+    showCurrent();
+  }
+
+  function showCurrent(){
+    const it = currentDueList[currentIndex];
+    if(!it){
+      $("todayEmpty").classList.remove("hidden");
+      $("reviewBox").classList.add("hidden");
+      return;
+    }
+    $("rvWord").textContent = it.wordKo || "—";
+    $("rvCn").textContent = it.meaningZh || "—";
+    $("rvKoEx").textContent = it.exKo || "—";
+    $("rvZhEx").textContent = it.exZh || "—";
+
+    const stageIdx = it.stageIndex ?? 0;
+    const stageDay = settings.curveDays[stageIdx] ?? 0;
+    $("rvStage").textContent = `Stage: day${stageDay}`;
+    $("rvDue").textContent = `Due: ${it.dueDateISO || "—"}`;
+
+    // Preview next date if "good"
+    const maxIdx = settings.curveDays.length - 1;
+    const previewStage = Math.min(maxIdx, stageIdx + 1);
+    const previewISO = getDueDateFromStage(settings, previewStage, nowDate());
+    $("rvNextPreview").textContent = `Next: ${previewISO} (if 会)`;
+  }
+
+  function escapeHTML(s){
+    return (s ?? "").toString()
+      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+  }
+  function escapeAttr(s){
+    return escapeHTML(s).replaceAll("\n"," ");
+  }
+
+  function parseCurve(input){
+    const arr = (input || "")
+      .split(",")
+      .map(x => x.trim())
+      .filter(Boolean)
+      .map(x => Number(x))
+      .filter(x => Number.isFinite(x) && x >= 0);
+    // ensure starts with 0
+    if(arr.length === 0) return [...defaultSettings.curveDays];
+    if(arr[0] !== 0) arr.unshift(0);
+    // unique + sorted
+    const uniq = Array.from(new Set(arr)).sort((a,b)=>a-b);
+    return uniq;
+  }
+
+  function detectSep(text){
+    // If contains tab more than commas, pick tab, else comma.
+    const tabs = (text.match(/\t/g) || []).length;
+    const commas = (text.match(/,/g) || []).length;
+    const pipes = (text.match(/\|/g) || []).length;
+    if(tabs >= commas && tabs >= pipes && tabs > 0) return "\t";
+    if(pipes > commas && pipes > 0) return "|";
+    return ",";
+  }
+
+  function parseLines(text, sep){
+    const raw = (text || "").trim();
+    if(!raw) return [];
+
+    const s = sep === "auto" ? detectSep(raw) : (sep === "\\t" ? "\t" : sep);
+
+    // Simple CSV: we support quoted fields with commas. For tabs/pipes, treat as plain split.
+    const lines = raw.split(/\r?\n/).filter(l => l.trim().length > 0);
+    return lines.map(line => splitRow(line, s)).filter(r => r.length >= 4);
+  }
+
+  function splitRow(line, sep){
+    if(sep !== ","){
+      return line.split(sep).map(x => x.trim());
+    }
+    // Basic CSV parser (quotes)
+    const out = [];
+    let cur = "";
+    let inQ = false;
+    for(let i=0;i<line.length;i++){
+      const ch = line[i];
+      if(ch === '"'){
+        if(inQ && line[i+1] === '"'){ cur += '"'; i++; }
+        else inQ = !inQ;
+      }else if(ch === "," && !inQ){
+        out.push(cur.trim());
+        cur = "";
+      }else{
+        cur += ch;
+      }
+    }
+    out.push(cur.trim());
+    return out;
+  }
+
+  function exportBackup(db){
+    const payload = {
+      settings,
+      db
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `korean_sentence_diary_backup_${fmtDate(new Date())}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function importBackupJson(text){
+    const payload = JSON.parse(text);
+    if(payload.settings) saveSettings(payload.settings);
+    if(payload.db) saveDB(payload.db);
+  }
+
+  function switchTab(name){
+    tabs.forEach(t => t.classList.toggle("active", t.dataset.tab === name));
+    ["today","add","import","settings"].forEach(k => {
+      const panel = $("panel-" + k);
+      if(!panel) return;
+      panel.classList.toggle("hidden", k !== name);
+    });
+  }
+
+  // State
+  let settings = loadSettings();
+  let db = loadDB();
+  let currentDueList = [];
+  let currentIndex = 0;
+
+  function refresh(){
+    settings = loadSettings();
+    db = loadDB();
+
+    $("appTitle").textContent = settings.title || defaultSettings.title;
+    $("inTitle").value = settings.title || defaultSettings.title;
+    $("inCurve").value = (settings.curveDays || defaultSettings.curveDays).join(",");
+    $("inEasyJump").value = String(settings.easyJump ?? defaultSettings.easyJump);
+    $("inHardBack").value = String(settings.hardBack ?? defaultSettings.hardBack);
+
+    renderToday(db);
+    renderAllItems(db);
+
+    // reset add button if not editing
+    if(!$("btnAdd").dataset.editingId){
+      $("btnAdd").textContent = "添加";
+    }
+  }
+
+  // Tab events
+  tabs.forEach(t => t.addEventListener("click", () => switchTab(t.dataset.tab)));
+
+  // Add
+  $("btnAddSpeak").addEventListener("click", () => speakKo($("inWord").value));
+  $("btnAdd").addEventListener("click", () => {
+    const wordKo = normalizeText($("inWord").value);
+    const meaningZh = normalizeText($("inCn").value);
+    const exKo = normalizeText($("inKoEx").value);
+    const exZh = normalizeText($("inZhEx").value);
+
+    if(!must(wordKo) || !must(meaningZh) || !must(exKo) || !must(exZh)){
+      alert("四项必填：韩语单词、中文释义、韩语例句、中文例句翻译。");
+      return;
+    }
+
+    const tags = normalizeText($("inTags").value)
+      .split(",").map(x => x.trim()).filter(Boolean);
+
+    const note = normalizeText($("inNote").value);
+
+    const today = nowDate();
+    const editingId = $("btnAdd").dataset.editingId;
+
+    if(editingId){
+      const it = db.items.find(x => x.id === editingId);
+      if(!it){ alert("未找到要编辑的词条。"); return; }
+      it.wordKo = wordKo;
+      it.meaningZh = meaningZh;
+      it.exKo = exKo;
+      it.exZh = exZh;
+      it.tags = tags;
+      it.note = note;
+      // Keep review state as-is
+      saveDB(db);
+      $("btnAdd").dataset.editingId = "";
+      $("btnAdd").textContent = "添加";
+    }else{
+      const item = {
+        id: uid(),
+        wordKo, meaningZh, exKo, exZh,
+        tags, note,
+        createdAt: new Date().toISOString(),
+        stageIndex: 0,
+        dueDateISO: getDueDateFromStage(settings, 0, today),
+        lastReviewedISO: ""
+      };
+      upsertItem(db, item);
+      saveDB(db);
+    }
+
+    // clear inputs
+    $("inWord").value = "";
+    $("inCn").value = "";
+    $("inKoEx").value = "";
+    $("inZhEx").value = "";
+    $("inTags").value = "";
+    $("inNote").value = "";
+
+    refresh();
+    switchTab("today");
+  });
+
+  // Review controls
+  $("btnSpeak").addEventListener("click", () => {
+    const it = currentDueList[currentIndex];
+    if(it) speakKo(it.wordKo);
+  });
+  $("btnShowAnswer").addEventListener("click", () => {
+    $("rvAnswer").classList.toggle("hidden");
+  });
+
+  document.querySelectorAll("[data-grade]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const grade = btn.getAttribute("data-grade");
+      const it = currentDueList[currentIndex];
+      if(!it) return;
+      applyGrade(settings, it, grade);
+      saveDB(db);
+
+      // Recompute due list and show next
+      db = loadDB();
+      currentDueList = getDueItems(db);
+      if(currentIndex >= currentDueList.length) currentIndex = Math.max(0, currentDueList.length - 1);
+      refresh();
+    });
+  });
+
+  // Import
+  $("btnSample").addEventListener("click", () => {
+    $("pasteBox").value =
+`설레다,心动；激动,내일 여행이라서 마음이 설레.,因为明天要旅行，我心里很激动。,情绪,常见口语
+부담되다,有负担；感到压力,이런 부탁은 좀 부담돼.,这种请求让我有点压力。,日常,
+익숙하다,熟悉,이제 한국 생활이 좀 익숙해졌어.,现在对韩国生活稍微熟悉了。,生活,`;
+  });
+
+  $("fileImport").addEventListener("change", async (e) => {
+    const f = e.target.files?.[0];
+    if(!f) return;
+    const text = await f.text();
+    $("pasteBox").value = text;
+  });
+
+  $("btnImport").addEventListener("click", () => {
+    const text = $("pasteBox").value;
+    const sepSel = $("sep").value;
+    const rows = parseLines(text, sepSel);
+
+    if(rows.length === 0){
+      alert("没有解析到任何行。请确认至少 4 列：韩语单词, 中文释义, 韩语例句, 中文例句翻译");
+      return;
+    }
+
+    const today = nowDate();
+    let added = 0, updated = 0, skipped = 0;
+
+    for(const r of rows){
+      const wordKo = normalizeText(r[0]);
+      const meaningZh = normalizeText(r[1]);
+      const exKo = normalizeText(r[2]);
+      const exZh = normalizeText(r[3]);
+      const tags = normalizeText(r[4] || "").split(",").map(x=>x.trim()).filter(Boolean);
+      const note = normalizeText(r[5] || "");
+
+      if(!must(wordKo) || !must(meaningZh) || !must(exKo) || !must(exZh)){
+        skipped++;
+        continue;
+      }
+
+      const existing = db.items.find(it => normalizeText(it.wordKo) === wordKo);
+      if(existing){
+        existing.meaningZh = meaningZh;
+        existing.exKo = exKo;
+        existing.exZh = exZh;
+        existing.tags = tags;
+        existing.note = note;
+        updated++;
+      }else{
+        db.items.push({
+          id: uid(),
+          wordKo, meaningZh, exKo, exZh,
+          tags, note,
+          createdAt: new Date().toISOString(),
+          stageIndex: 0,
+          dueDateISO: getDueDateFromStage(settings, 0, today),
+          lastReviewedISO: ""
+        });
+        added++;
+      }
+    }
+
+    saveDB(db);
+    refresh();
+    switchTab("today");
+    alert(`导入完成：新增 ${added}，更新 ${updated}，跳过 ${skipped}。`);
+  });
+
+  // Export backup
+  $("btnExport").addEventListener("click", () => exportBackup(loadDB()));
+
+  // Settings
+  $("btnSaveSettings").addEventListener("click", () => {
+    const title = normalizeText($("inTitle").value) || defaultSettings.title;
+    const curveDays = parseCurve($("inCurve").value);
+    const easyJump = parseInt($("inEasyJump").value || "2", 10);
+    const hardBack = parseInt($("inHardBack").value || "1", 10);
+
+    const s = {
+      title,
+      curveDays,
+      easyJump: Number.isFinite(easyJump) ? Math.max(0, easyJump) : defaultSettings.easyJump,
+      hardBack: Number.isFinite(hardBack) ? Math.max(0, hardBack) : defaultSettings.hardBack
+    };
+    saveSettings(s);
+
+    // Update title in UI
+    $("appTitle").textContent = s.title;
+
+    refresh();
+    alert("已保存设置。");
+  });
+
+  $("btnInstallTip").addEventListener("click", () => {
+    alert(
+`iPad 添加到主屏（离线更稳定）：
+1) 用 Safari 打开这个网站
+2) 点分享按钮
+3) 选择“添加到主屏幕”
+之后从主屏图标打开即可。`
+    );
+  });
+
+  $("btnReset").addEventListener("click", () => {
+    if(confirm("确定清空所有数据？建议先导出备份。")){
+      localStorage.removeItem(STORAGE_KEY);
+      // settings keep, but you can clear too if you want:
+      // localStorage.removeItem(SETTINGS_KEY);
+      db = loadDB();
+      refresh();
+    }
+  });
+
+  // Export/import backup via paste (optional advanced: drag/drop). Keep simple for iPad.
+
+  // Register service worker
+  if("serviceWorker" in navigator){
+    navigator.serviceWorker.register("./sw.js").catch(()=>{});
+  }
+  // speechSynthesis voice loading quirk
+  if(window.speechSynthesis){
+    window.speechSynthesis.onvoiceschanged = () => {};
+  }
+
+  // Initial
+  refresh();
+  switchTab("today");
+
+})();
+</script>
+</body>
+</html>
